@@ -1,5 +1,3 @@
-x = 10
-y = 20
 def divEntier(x: int, y: int) -> int:
     if x < y:
         return 0
