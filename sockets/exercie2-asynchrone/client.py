@@ -11,7 +11,7 @@ def receive_messages(client_socket):
         except OSError:  
             break
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket = socket.socket()
 client_socket.connect(('127.0.0.1', 1234))
 
 receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))

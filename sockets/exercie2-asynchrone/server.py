@@ -24,7 +24,7 @@ def handle_client(conn, address):
     except ConnectionResetError:
         print(f"Client {address} déconnecté.")
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket = socket.socket()
 server_socket.bind(('127.0.0.1', 1234))
 server_socket.listen(5)
 print("Serveur en attente de connexions...")

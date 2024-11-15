@@ -1,22 +1,17 @@
 import threading
 import time
 
-def thread1():
-    for i in range (5):
-        print("Je suis la thread 1")
-        time.sleep(0.5)
-
-def thread2():
-    for i in range (5):
-        print("Je suis la thread 2")
+def thread(name, count):
+    for i in range (count):
+        print(f"Je suis la thread {name}")
         time.sleep(0.5)
 
 start = time.perf_counter()
 
-t1 = threading.Thread(target=thread1)
+t1 = threading.Thread(target=thread, args=[1,9])
 t1.start()
 
-t2 = threading.Thread(target=thread2)
+t2 = threading.Thread(target=thread, args=[2,8])
 t2.start()
 
 t1.join()
