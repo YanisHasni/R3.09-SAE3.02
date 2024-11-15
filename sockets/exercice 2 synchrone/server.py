@@ -1,40 +1,31 @@
 import socket
 
 server_socket = socket.socket()
-server_socket.bind(('0.0.0.0', 1234))
+server_socket.bind(('127.0.0.1', 1234))
 server_socket.listen(5)
 print("Serveur en attente de connexions...")
-
-clients = []
 
 try:
     while True:
         conn, address = server_socket.accept()
-        clients.append(conn)
         print(f"Connexion acceptée de {address}")
 
         while True:
             message = conn.recv(1024).decode()
             if message.lower() == "bye":
-                print("Client déconnecté.")
+                print(f"Client {address} déconnecté.")
                 conn.close()
-                clients.remove(conn)
-                break
+                break  
             elif message.lower() == "arret":
                 print("Arrêt du serveur.")
                 conn.close()
-                for client in clients:
-                    client.close()
                 server_socket.close()
                 exit()
             else:
                 print(f"Message reçu : {message}")
-                reply = "Message reçu"
+                reply = input("Entrez votre réponse : ")
                 conn.send(reply.encode())
-
 except KeyboardInterrupt:
     print("Serveur arrêté par l'utilisateur.")
 finally:
-    for client in clients:
-        client.close()
     server_socket.close()

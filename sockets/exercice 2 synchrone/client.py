@@ -7,8 +7,11 @@ try:
     while True:
         message = input("Entrez votre message : ")
         client_socket.send(message.encode())
-        if message.lower() in ["bye", "arret"]:
+        if message.lower() == "bye":
             print("Déconnexion du client.")
+            break
+        elif message.lower() == "arret":
+            print("Client arrêté et demande l'arrêt du serveur.")
             break
         reply = client_socket.recv(1024).decode()
         print(f"Réponse du serveur : {reply}")
