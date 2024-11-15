@@ -9,8 +9,8 @@ def countdown(name, start):
         time.sleep(0.5) 
 
 
-thread1 = threading.Thread(target=countdown, args=("thread 1", 5))
-thread2 = threading.Thread(target=countdown, args=("thread 2", 3))
+thread1 = threading.Thread(target=countdown, args=("thread 1", 7))
+thread2 = threading.Thread(target=countdown, args=("thread 2", 10))
 
 
 thread1.start()
