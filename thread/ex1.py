@@ -22,7 +22,7 @@ t2.start()
 t1.join()
 t2.join()
 
-end = time.perf_counter()
+end = time.perf_counter() 
 print(f"Tasks ended in {round(end - start, 2)} second(s)")
 
 
