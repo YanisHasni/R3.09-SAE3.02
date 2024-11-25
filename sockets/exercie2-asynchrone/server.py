@@ -2,44 +2,38 @@ import socket
 import threading
 
 def handle_client(conn, address):
-    print(f"Connexion acceptée de {address}")
-    try:
+    print(f"Connexion de {address}")
+    
+    def receive_messages():
         while True:
-            message = conn.recv(1024).decode()
-            if message.lower() == "bye":
-                print(f"Client {address} déconnecté.")
-                conn.close()
+            try:
+                message = conn.recv(1024).decode()
+                if message.lower() == "bye":
+                    print(f"Client {address} déconnecté.")
+                    conn.close()
+                    break
+                elif message.lower() == "arret":
+                    print("Arrêt du serveur.")
+                    conn.close()
+                    server_socket.close()
+                    exit()
+                else:
+                    print(f"Message de {address} : {message}")
+            except:
                 break
-            elif message.lower() == "arret":
-                print("Arrêt du serveur.")
-                conn.close()
-                for client in clients:
-                    client.close()
-                server_socket.close()
-                exit()
-            else:
-                print(f"Message de {address} : {message}")
-                reply = "Message reçu"
-                conn.send(reply.encode())
-    except ConnectionResetError:
-        print(f"Client {address} déconnecté.")
+
+    threading.Thread(target=receive_messages).start()
 
 server_socket = socket.socket()
-server_socket.bind(('127.0.0.1', 1234))
-server_socket.listen(5)
+server_socket.bind(('0.0.0.0', 1234))
+server_socket.listen()
 print("Serveur en attente de connexions...")
-
-clients = []
 
 try:
     while True:
         conn, address = server_socket.accept()
-        clients.append(conn)
-        client_thread = threading.Thread(target=handle_client, args=(conn, address))
-        client_thread.start()
+        threading.Thread(target=handle_client, args=(conn, address)).start()
 except KeyboardInterrupt:
-    print("Serveur arrêté par l'utilisateur.")
+    print("Serveur arrêté.")
 finally:
-    for client in clients:
-        client.close()
     server_socket.close()

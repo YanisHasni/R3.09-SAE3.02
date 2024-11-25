@@ -1,8 +1,6 @@
 import sys
 import socket
-from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog, QTextEdit
-)
+from PyQt6.QtWidgets import *
 
 class ClientApp(QWidget):
     def __init__(self):
