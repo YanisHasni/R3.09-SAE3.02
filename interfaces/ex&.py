@@ -14,7 +14,7 @@ class MainWindow(QMainWindow):
         ok = QPushButton("Ok")
         quit = QPushButton("Quitter")
         # Ajouter les composants au grid ayout
-        grid.addWidget(self.message, 1, 1)
+        grid.addWidget(self.message, 1, 1) 
         grid.addWidget(self.text, 2, 2)
         grid.addWidget(lab, 0, 0)
         grid.addWidget(ok, 3, 2)
