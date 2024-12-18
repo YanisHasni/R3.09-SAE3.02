@@ -12,6 +12,7 @@ class ClientApp(QMainWindow):
         self.server_host, self.server_port = self.load_config()
         self.selected_file = None
         self.client_socket = None
+        self.running = True
 
         layout = QVBoxLayout()
         self.label_host = QLabel(f"Hôte du serveur : {self.server_host}")
@@ -31,7 +32,7 @@ class ClientApp(QMainWindow):
         layout.addWidget(self.label_file)
 
         self.button_send = QPushButton("Envoyer au serveur")
-        self.button_send.clicked.connect(self.start_thread)
+        self.button_send.clicked.connect(self.send_program)
         layout.addWidget(self.button_send)
 
         self.result_display = QTextEdit()
@@ -74,10 +75,6 @@ class ClientApp(QMainWindow):
         else:
             self.label_file.setText("Aucun fichier sélectionné.")
 
-    def start_thread(self):
-        thread = threading.Thread(target=self.send_program)
-        thread.start()
-
     def send_program(self):
         if not self.selected_file:
             self.result_display.append("Erreur : Aucun fichier sélectionné.")
@@ -89,9 +86,13 @@ class ClientApp(QMainWindow):
             with open(self.selected_file, "r") as file:
                 program_content = file.read()
             self.client_socket.sendall(program_content.encode("utf-8"))
-            self.client_socket.shutdown(socket.SHUT_WR)
-            response = self.client_socket.recv(4096).decode("utf-8")
-            self.result_display.append(f"Réponse du serveur :\n{response}")
+            response = ""
+            while True:
+                chunk = self.client_socket.recv(4096).decode("utf-8")
+                response += chunk
+                if "\n" in chunk or not chunk:
+                    break
+            self.result_display.append(f"Réponse du serveur :\n{response.strip()}")
         except Exception as e:
             self.result_display.append(f"Erreur : {e}")
 

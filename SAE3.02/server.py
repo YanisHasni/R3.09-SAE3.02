@@ -15,6 +15,7 @@ class SimpleServer:
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server_socket.bind((self.host, self.port))
             self.server_socket.listen(5)
+            self.server_socket.settimeout(1)  # Timeout pour éviter de bloquer sur accept()
             print(f"Serveur démarré sur {self.host}:{self.port}")
             while self.running:
                 try:
@@ -22,9 +23,8 @@ class SimpleServer:
                     print(f"Connexion reçue de : {client_address}")
                     thread = threading.Thread(target=self.handle_client, args=(client_socket,))
                     thread.start()
-                except KeyboardInterrupt:
-                    print("\nArrêt du serveur demandé par l'utilisateur.")
-                    break
+                except socket.timeout:
+                    continue  # Permet de vérifier régulièrement self.running
         except KeyboardInterrupt:
             print("\nArrêt du serveur demandé par l'utilisateur.")
         finally:
@@ -37,23 +37,23 @@ class SimpleServer:
         print("Serveur arrêté.")
 
     def handle_client(self, client_socket):
-        if self.busy:
-            client_socket.sendall("Serveur occupé, connectez-vous à un autre serveur.\n".encode("utf-8"))
-            client_socket.close()
-            return
-        self.busy = True
-        try:
-            data = client_socket.recv(4096).decode("utf-8")
-            if not data:
-                return
-            print("Code reçu :", data)
-            result = self.execute_code(data)
-            client_socket.sendall(result.encode("utf-8"))
-        except Exception as e:
-            client_socket.sendall(f"Erreur : {e}".encode("utf-8"))
-        finally:
-            self.busy = False
-            client_socket.close()
+        while True:
+            if self.busy:
+                client_socket.sendall("Serveur occupé, veuillez réessayer plus tard.\n".encode("utf-8"))
+                break
+            self.busy = True
+            try:
+                data = client_socket.recv(4096).decode("utf-8")
+                if not data:
+                    break
+                print("Code reçu :", data)
+                result = self.execute_code(data)
+                client_socket.sendall((result + "\n").encode("utf-8"))
+            except Exception as e:
+                client_socket.sendall(f"Erreur : {e}".encode("utf-8"))
+            finally:
+                self.busy = False
+        client_socket.close()
 
     def execute_code(self, code):
         temp_file = "temp_program.py"
