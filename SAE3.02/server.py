@@ -21,8 +21,15 @@ class SimpleServer:
                 try:
                     client_socket, client_address = self.server_socket.accept()
                     print(f"Connexion reçue de : {client_address}")
-                    thread = threading.Thread(target=self.handle_client, args=(client_socket,))
-                    thread.start()
+                    if self.busy:
+                        client_socket.sendall("Serveur occupé, veuillez réessayer plus tard.\n".encode("utf-8"))
+                        client_socket.close()  # Fermer la connexion du deuxième client
+                        print("Client rejeté : serveur occupé.")
+                        continue
+                    else:
+                        client_socket.sendall("Serveur disponible. Connecté avec succès.\n".encode("utf-8"))
+                        thread = threading.Thread(target=self.handle_client, args=(client_socket,))
+                        thread.start()
                 except socket.timeout:
                     continue  # Permet de vérifier régulièrement self.running
         except KeyboardInterrupt:
@@ -37,29 +44,26 @@ class SimpleServer:
         print("Serveur arrêté.")
 
     def handle_client(self, client_socket):
-        while True:
-            if self.busy:
-                client_socket.sendall("Serveur occupé, veuillez réessayer plus tard.\n".encode("utf-8"))
-                break
-            self.busy = True
-            try:
+        self.busy = True
+        try:
+            while True:
                 data = client_socket.recv(4096).decode("utf-8")
                 if not data:
                     break
                 print("Code reçu :", data)
                 result = self.execute_code(data)
                 client_socket.sendall((result + "\n").encode("utf-8"))
-            except Exception as e:
-                client_socket.sendall(f"Erreur : {e}".encode("utf-8"))
-            finally:
-                self.busy = False
-        client_socket.close()
+        except Exception as e:
+            client_socket.sendall(f"Erreur : {e}".encode("utf-8"))
+        finally:
+            self.busy = False
+            client_socket.close()
+            print("Client déconnecté.")
 
     def execute_code(self, code):
         temp_file = "temp_program.py"
-        file = open(temp_file, "w")
-        file.write(code)
-        file.close()
+        with open(temp_file, "w") as file:
+            file.write(code)
         result = os.popen(f"python {temp_file}").read()
         os.remove(temp_file)
         return result
