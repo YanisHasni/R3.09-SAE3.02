@@ -1,117 +1,122 @@
 import socket
+import os
 import sys
 from PyQt6.QtWidgets import *
 
-class ClientApp(QMainWindow):
+class ApplicationClient(QMainWindow):
     def __init__(self):
         super().__init__()
+        # Configuration de la fenêtre principale
         self.setWindowTitle("Client - Envoi de programme")
         self.setGeometry(100, 100, 500, 400)
-        self.server_host, self.server_port = self.load_config()
-        self.selected_file = None
-        self.client_socket = None
+        self.hote_serveur, self.port_serveur = self.charger_config()  # Charger l'hôte et le port depuis config.txt
+        self.fichier_selectionne = None
+        self.socket_client = None
 
+        # Création des widgets de l'interface
         layout = QVBoxLayout()
-        self.label_host = QLabel("Hôte du serveur : " + self.server_host)
-        layout.addWidget(self.label_host)
-        self.label_port = QLabel("Port du serveur : " + str(self.server_port))
-        layout.addWidget(self.label_port)
 
-        self.button_connect = QPushButton("Se connecter au serveur")
-        self.button_connect.clicked.connect(self.connect_to_server)
-        layout.addWidget(self.button_connect)
+        self.etiquette_hote = QLabel(f"Hôte du serveur : {self.hote_serveur}")
+        layout.addWidget(self.etiquette_hote)
 
-        self.button_select_file = QPushButton("Sélectionner un fichier")
-        self.button_select_file.clicked.connect(self.select_file)
-        self.button_select_file.setEnabled(False)
-        layout.addWidget(self.button_select_file)
+        self.etiquette_port = QLabel(f"Port du serveur : {self.port_serveur}")
+        layout.addWidget(self.etiquette_port)
 
-        self.label_file = QLabel("Aucun fichier sélectionné.")
-        layout.addWidget(self.label_file)
+        self.bouton_connexion = QPushButton("Se connecter au serveur")
+        self.bouton_connexion.clicked.connect(self.se_connecter_au_serveur)  # Bouton pour se connecter au serveur
+        layout.addWidget(self.bouton_connexion)
 
-        self.button_send = QPushButton("Envoyer au serveur")
-        self.button_send.clicked.connect(self.send_program)
-        self.button_send.setEnabled(False)
-        layout.addWidget(self.button_send)
+        self.bouton_selectionner_fichier = QPushButton("Sélectionner un fichier")
+        self.bouton_selectionner_fichier.clicked.connect(self.selectionner_fichier)  # Bouton pour choisir un fichier
+        self.bouton_selectionner_fichier.setEnabled(False)  # Désactivé tant que le client n'est pas connecté
+        layout.addWidget(self.bouton_selectionner_fichier)
 
-        self.result_display = QTextEdit()
-        self.result_display.setReadOnly(True)
-        layout.addWidget(self.result_display)
+        self.etiquette_fichier = QLabel("Aucun fichier sélectionné.")
+        layout.addWidget(self.etiquette_fichier)
 
+        self.bouton_envoyer = QPushButton("Envoyer au serveur")
+        self.bouton_envoyer.clicked.connect(self.envoyer_programme)  # Bouton pour envoyer le fichier
+        self.bouton_envoyer.setEnabled(False)  # Désactivé tant qu'aucun fichier n'est sélectionné
+        layout.addWidget(self.bouton_envoyer)
+
+        self.affichage_resultat = QTextEdit()  # Zone de texte pour afficher les résultats
+        self.affichage_resultat.setReadOnly(True)
+        layout.addWidget(self.affichage_resultat)
+
+        # Ajouter les widgets dans la fenêtre principale
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
 
-    def load_config(self):
+    def charger_config(self):
+        # Charger l'hôte et le port du serveur à partir du fichier config.txt
         try:
-            file = open("config.txt", "r")
-            lines = file.readlines()
-            file.close()
-            host = "localhost"
-            port = 4000
-            for line in lines:
-                if "host=" in line:
-                    host = line.split("=")[1].strip()
-                elif "port=" in line:
-                    port = int(line.split("=")[1].strip())
-            return host, port
+            with open("config.txt", "r") as fichier:
+                lignes = fichier.readlines()
+                hote = "localhost"
+                port = 4000
+                for ligne in lignes:
+                    if "host=" in ligne:
+                        hote = ligne.split("=")[1].strip()
+                    elif "port=" in ligne:
+                        port = int(ligne.split("=")[1].strip())
+                return hote, port
         except:
-            return "localhost", 4000
+            return "localhost", 4000  # Valeurs par défaut si le fichier config est manquant
 
-    def connect_to_server(self):
+    def se_connecter_au_serveur(self):
+        # Connexion au serveur
         try:
-            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect((self.server_host, self.server_port))
-            response = self.client_socket.recv(1024).decode("utf-8").strip()
-            if "Serveur occupé" in response:
-                self.result_display.append("Serveur occupé, veuillez réessayer plus tard.")
-                self.client_socket.close()
-                self.client_socket = None
-            else:
-                self.result_display.append("Connecté au serveur.")
-                self.button_select_file.setEnabled(True)
-                self.button_send.setEnabled(True)
-        except:
-            self.result_display.append("Erreur de connexion.")
+            self.socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket_client.connect((self.hote_serveur, self.port_serveur))
+            self.affichage_resultat.append("Connecté au serveur.")  # Afficher un message si connecté
+            self.bouton_selectionner_fichier.setEnabled(True)  # Activer le bouton pour sélectionner un fichier
+            self.bouton_envoyer.setEnabled(True)  # Activer le bouton pour envoyer le fichier
+        except Exception as e:
+            self.affichage_resultat.append(f"Erreur de connexion : {e}")  # Message en cas d'erreur
 
-    def select_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Sélectionner un fichier", "", "Python Files (*.py)")
-        if file_path:
-            self.selected_file = file_path
-            self.label_file.setText("Fichier sélectionné : " + file_path)
+    def selectionner_fichier(self):
+        # Sélectionner un fichier Python, C ou C++
+        chemin_fichier, _ = QFileDialog.getOpenFileName(
+            self,
+            "Sélectionner un fichier",
+            "",
+            "Python Files (*.py);;C Files (*.c);;C++ Files (*.cpp)"
+        )
+        if chemin_fichier:
+            self.fichier_selectionne = chemin_fichier
+            self.etiquette_fichier.setText(f"Fichier sélectionné : {chemin_fichier}")  # Afficher le chemin
         else:
-            self.label_file.setText("Aucun fichier sélectionné.")
+            self.etiquette_fichier.setText("Aucun fichier sélectionné.")  # Message si aucun fichier n'est choisi
 
-    def send_program(self):
-        if not self.selected_file:
-            self.result_display.append("Erreur : Aucun fichier sélectionné.")
+    def envoyer_programme(self):
+        # Envoyer le programme au serveur
+        if not self.fichier_selectionne:
+            self.affichage_resultat.append("Erreur : Aucun fichier sélectionné.")  # Vérifier qu'un fichier est sélectionné
             return
-        if not self.client_socket:
-            self.result_display.append("Erreur : Vous n'êtes pas connecté au serveur.")
+        if not self.socket_client:
+            self.affichage_resultat.append("Erreur : Vous n'êtes pas connecté au serveur.")  # Vérifier la connexion
             return
         try:
-            file = open(self.selected_file, "r")
-            program_content = file.read()
-            file.close()
-            self.client_socket.sendall(program_content.encode("utf-8"))
+            # Envoyer le chemin du fichier au serveur
+            self.socket_client.sendall(self.fichier_selectionne.encode("utf-8"))
+            self.affichage_resultat.append("Envoi du programme au serveur...")
 
-            response = ""
+            # Recevoir la réponse du serveur
+            reponse = ""
             while True:
-                chunk = self.client_socket.recv(4096).decode("utf-8")
-                response += chunk
-                if "\n" in chunk or not chunk:
+                morceau = self.socket_client.recv(4096).decode("utf-8")
+                reponse += morceau
+                if "\n" in morceau or not morceau:
                     break
 
-            self.result_display.append("Réponse du serveur :\n" + response.strip())
-        except:
-            self.result_display.append("Erreur lors de l'envoi.")
-        finally:
-            self.client_socket.close()
-            self.client_socket = None
-            self.result_display.append("Déconnecté du serveur.")
+            self.affichage_resultat.append(f"Réponse du serveur :\n{reponse.strip()}")  # Afficher la réponse du serveur
+        except Exception as e:
+            self.affichage_resultat.append(f"Erreur : {e}")  # Afficher une erreur si l'envoi échoue
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = ClientApp()
-    window.show()
-    sys.exit(app.exec())
+    # Lancer l'application
+    application = QApplication(sys.argv)
+    fenetre = ApplicationClient()
+    fenetre.show()
+    sys.exit(application.exec())
